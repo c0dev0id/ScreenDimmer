@@ -41,6 +41,16 @@ class BrightnessService : Service(), SensorEventListener {
         )
     }
 
+    // Makes the "can't set brightness" notification actionable: tapping it
+    // lands on the settings screen, which re-runs the permission flow.
+    private val openIntent by lazy {
+        PendingIntent.getActivity(
+            this, 1,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     private val acReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
@@ -95,7 +105,7 @@ class BrightnessService : Service(), SensorEventListener {
         }
         if (!started) {
             started = true
-            controller.setManualMode()
+            controller.ensureManualMode()
             detectAcState()
             registerReceiver(acReceiver, IntentFilter().apply {
                 addAction(Intent.ACTION_POWER_CONNECTED)
@@ -205,6 +215,7 @@ class BrightnessService : Service(), SensorEventListener {
     }
 
     private fun notificationText(): String {
+        if (!controller.hasControl) return getString(R.string.notification_no_control)
         val power = if (onAc) "On AC — full brightness"
                     else "On battery — cap ${(Prefs.brightnessCap * 100).toInt()}%"
         return if (controller.targetBrightness >= 0)
@@ -218,6 +229,7 @@ class BrightnessService : Service(), SensorEventListener {
             .setContentTitle("Screen Dimmer")
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(openIntent)
             .addAction(0, "Stop", stopIntent)
             .setOngoing(true)
             .build()

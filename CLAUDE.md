@@ -36,6 +36,8 @@ Required GitHub secrets: `SIGNING_KEYSTORE_BASE64`, `SIGNING_KEYSTORE_PASSWORD`,
 
 Six files, one package (`de.codevoid.screensaver`):
 
+Note that the notification is derived from the *computed target*, so a healthy-looking notification is not evidence that brightness is actually being applied — check `hasControl` and the value in `Settings.System.SCREEN_BRIGHTNESS` instead.
+
 - **`BrightnessService`** — the core foreground service (`foregroundServiceType="specialUse"`). Owns all runtime state: registers `BroadcastReceiver`s for `ACTION_POWER_CONNECTED`/`DISCONNECTED` (exported — system broadcast) and `ACTION_SCREEN_ON`/`OFF` (not exported). The 500 ms `Handler` tick loop runs only while the screen is on — `ACTION_SCREEN_OFF` removes callbacks; `ACTION_SCREEN_ON` calls `controller.resetBuffer()` and restarts the loop. Each tick re-reads prefs (`applyPrefs()`), ticks the controller, and refreshes the notification. The notification shows live state (median lux → brightness target) and is reposted only when its text actually changes. Started sticky; a start intent with action `ACTION_STOP` stops it.
 - **`BrightnessController`** — brightness math, deliberately free of Android service plumbing (only touches `ContentResolver`/`Settings.System`). See "Brightness curve" below.
 - **`MainActivity`** — settings UI: live light-sensor readout, service state indicator, five sliders, Start/Stop. Sliders write straight to `Prefs` on every change (no Apply button); the running service picks them up on its next tick. See "Permission flow" below.
@@ -51,10 +53,18 @@ Six files, one package (`de.codevoid.screensaver`):
 2. The median of the last `windowSize` samples (user-configurable 10–50, default 25) is taken. Median, not average: spike-resistant against shadows and headlights.
 3. `luxToBrightness()` maps the median log10-scale between `darkLux` (min brightness below it) and `brightLux` (max above it), with a `MIN_LOG_SPAN`=0.3 guard so the endpoints can't collapse. The log fraction is raised to **gamma 2.2** because the Android brightness value is linear backlight power while perception is ~power^(1/2.2); without it, dim indoor light already looked ~65% bright.
 4. The result is clamped to `maxBrightness() = 255 · capFraction^2.2` — the cap is also gamma-corrected, so "80%" means 80% *perceived*, not 80% of raw units. `capFraction` is 1.0 on AC, `Prefs.brightnessCap` on battery.
-5. **Step limiting** caps movement to 1/`windowSize` of the range per tick, computed in gamma (perceived) space — a raw step of 25 near the bottom is a ~27% perceived jump, so clamping raw units would not be perceptually uniform.
-6. `Settings.System.SCREEN_BRIGHTNESS` is written only when the value actually changed.
+5. **Step limiting** (`stepToward`) caps movement to 1/`windowSize` of the range per tick, computed in gamma (perceived) space — a raw step of 25 near the bottom is a ~27% perceived jump, so clamping raw units would not be perceptually uniform. It also forces a minimum move of one raw unit: gamma compresses the bottom of the range so hard that a full step there measures under one unit, and truncating it to zero stalls the ramp at the floor permanently.
+6. `Settings.System.SCREEN_BRIGHTNESS` is written only when it differs from the value **read back from the system**, not from the value we last wrote — see "keeping control" below.
 
-Brightness floor is **1**/255, not 5 — the system slider is gamma-corrected, so 5 already sits at ~20% slider position and the screen never went truly dim. `resetBuffer()` clears the buffer (and `lastWritten`) so the next tick re-fills it entirely with the current reading and writes the correct brightness immediately, with no ramp-in.
+Brightness floor is **1**/255, not 5 — the system slider is gamma-corrected, so 5 already sits at ~20% slider position and the screen never went truly dim. `resetBuffer()` clears the buffer and sets `lastWritten` to the `-1` "no baseline" sentinel, so the next tick re-fills the buffer with the current reading and jumps straight to the target instead of ramping.
+
+### Keeping control of the brightness setting
+
+The app is not the only writer of `Settings.System.SCREEN_BRIGHTNESS`, and every one of these failure modes is silent — the notification is computed from the median lux and the *target*, so it looks perfectly healthy while nothing reaches the screen. Three defences, all in `BrightnessController`:
+
+- **Ramp from reality, not from memory.** Each tick re-reads the current system brightness and ramps from that. Comparing against our own `lastWritten` was the bug: when anything else moved the brightness (quick-settings slider, system restore after boot, OEM power saver) the computed target still equalled `lastWritten`, so no write happened, and with stable ambient light the app never wrote again.
+- **Re-assert manual mode every tick.** `ensureManualMode()` reads `SCREEN_BRIGHTNESS_MODE` and only writes when it has drifted. Adaptive brightness can be switched back on at any time, and while it is on the platform writes `SCREEN_BRIGHTNESS` continuously and outruns us.
+- **Never drop a write result.** `Settings.System.putInt` returns `false` (some OEM builds throw `SecurityException`) when the `WRITE_SETTINGS` app-op isn't held. `putSetting()` records this in `hasControl`, which the service turns into an actionable notification instead of fake healthy numbers.
 
 ### Permission flow (`MainActivity.onResume`)
 
