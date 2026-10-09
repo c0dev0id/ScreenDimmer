@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Light-point slider is capped at the sensor's reported maximum range (`Sensor.maximumRange`, shown next to the live readout); a stored light point above it is clamped so max brightness stays reachable
 
 ### Changed
+- Minimum Android version lowered from 14 (API 34) to 8.0 (API 26), with no version-branching code added. The API 34 pieces (`specialUse` foreground service type and its permission) are manifest-only and are ignored by older platforms, which run the service untyped; `targetSdk` stays at 34. Receiver registration dropped its `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED` flags, which were API 33 and did nothing — Android 14 exempts filters holding only protected system broadcasts, which these are
 - Reaction speed range shifted 10× slower; the old slowest setting is the new fastest. Stored values from older versions are clamped into the new range
 - Tick period raised from 200 ms to 5 s; per-tick EMA alpha rescaled ×25 (0.025–0.25, default 0.075) so wall-clock reaction speeds are unchanged (~20 s time constant at Fast, ~3 min at Slow). Brightness steps half the remaining distance per tick
 - Brightness curve is gamma-corrected (log-fraction^2.2): the brightness setting is linear backlight power but perception is ~power^(1/2.2), so previously dim indoor light (40 lx) already looked ~65% bright — perceived brightness now tracks the position between the dark and light points

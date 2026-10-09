@@ -18,9 +18,20 @@ Use case: tablets left in sunlight after the motorcycle is turned off drain the 
 - **Gradle**: 8.8 · **AGP**: 8.5.2 · **Kotlin**: 1.9.25 (versions in `gradle/libs.versions.toml`)
 - **JDK**: 17 (Temurin)
 - **Build target**: `./gradlew assembleRelease`
-- **SDK**: minSdk = compileSdk = targetSdk = 34
+- **SDK**: minSdk = 26 (Android 8.0), compileSdk = targetSdk = 34
 - **Language**: Kotlin, sources under `app/src/main/kotlin/de/codevoid/screensaver/`
 - Dependencies are deliberately minimal (`core-ktx`, `appcompat`); the UI is hand-written `SeekBar`/`TextView` in one layout, no view binding, no Compose.
+
+### The API 26 floor
+
+minSdk 26 is deliberate and currently costs **zero version-branching code** — keep it that way. What holds the line:
+
+- `NotificationChannel` and `startForegroundService` are the API 26 APIs, both called unconditionally. Anything below 26 would need real compat branches; that is the floor.
+- The `SDK_INT >= TIRAMISU` guard around the `POST_NOTIFICATIONS` request (`MainActivity.kt`) is **load-bearing**, not dead code. Do not "simplify" it away.
+- Receivers are registered **without** `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`. Those constants are API 33 and lint's `NewApi` is fatal during release assembly, so they would silently re-pin minSdk to 33. They are also unnecessary: Android 14's "declare export behavior" rule exempts filters holding only protected system broadcasts, which all four actions in use are.
+- `foregroundServiceType="specialUse"` and `FOREGROUND_SERVICE_SPECIAL_USE` stay in the manifest. Both are API 34 but manifest-only — older platforms ignore an unrecognised type value and an unknown permission name, so the service just runs untyped below 34. The requirement to declare a type is gated on `targetSdk`, not on the device.
+
+Before using any API newer than 26, check `apiLevel` in the docs and either guard it or pick an older equivalent.
 
 ## CI/CD
 
@@ -38,7 +49,7 @@ Six files, one package (`de.codevoid.screensaver`):
 
 Note that the notification is derived from the *computed target*, so a healthy-looking notification is not evidence that brightness is actually being applied — check `hasControl` and the value in `Settings.System.SCREEN_BRIGHTNESS` instead.
 
-- **`BrightnessService`** — the core foreground service (`foregroundServiceType="specialUse"`). Owns all runtime state: registers `BroadcastReceiver`s for `ACTION_POWER_CONNECTED`/`DISCONNECTED` (exported — system broadcast) and `ACTION_SCREEN_ON`/`OFF` (not exported). The 500 ms `Handler` tick loop runs only while the screen is on — `ACTION_SCREEN_OFF` removes callbacks; `ACTION_SCREEN_ON` calls `controller.resetBuffer()` and restarts the loop. Each tick re-reads prefs (`applyPrefs()`), ticks the controller, and refreshes the notification. The notification shows live state (median lux → brightness target) and is reposted only when its text actually changes. Started sticky; a start intent with action `ACTION_STOP` stops it.
+- **`BrightnessService`** — the core foreground service (`foregroundServiceType="specialUse"`). Owns all runtime state: registers `BroadcastReceiver`s for `ACTION_POWER_CONNECTED`/`DISCONNECTED` and `ACTION_SCREEN_ON`/`OFF` (no export flags — see "The API 26 floor"). The 500 ms `Handler` tick loop runs only while the screen is on — `ACTION_SCREEN_OFF` removes callbacks; `ACTION_SCREEN_ON` calls `controller.resetBuffer()` and restarts the loop. Each tick re-reads prefs (`applyPrefs()`), ticks the controller, and refreshes the notification. The notification shows live state (median lux → brightness target) and is reposted only when its text actually changes. Started sticky; a start intent with action `ACTION_STOP` stops it.
 - **`BrightnessController`** — brightness math, deliberately free of Android service plumbing (only touches `ContentResolver`/`Settings.System`). See "Brightness curve" below.
 - **`MainActivity`** — settings UI: live light-sensor readout, service state indicator, five sliders, Start/Stop. Sliders write straight to `Prefs` on every change (no Apply button); the running service picks them up on its next tick. See "Permission flow" below.
 - **`Prefs`** — `SharedPreferences` singleton; call `Prefs.init(context)` before any access (service and activity each do this in their own `onCreate`). Keys: `brightness_cap` (Float 0.5–1.0, default 0.8), `reaction_window` (Int, clamped 10–50, default 25), `dark_lux` (Float, default 10), `bright_lux` (Float, default 50 000), `auto_off_minutes` (Int, default 5).
@@ -70,7 +81,7 @@ The app is not the only writer of `Settings.System.SCREEN_BRIGHTNESS`, and every
 
 Three grants are needed, and **only one flow is launched per resume** — each subsequent `onResume` picks up the next:
 
-1. `POST_NOTIFICATIONS` (Android 13+, normal runtime request). Without it the foreground-service notification is silently suppressed when the service starts on boot.
+1. `POST_NOTIFICATIONS` (Android 13+, normal runtime request, guarded by `SDK_INT >= TIRAMISU` since minSdk is 26). Without it the foreground-service notification is silently suppressed when the service starts on boot.
 2. `WRITE_SETTINGS` — cannot be requested via the runtime-permission flow; the user is sent to `ACTION_MANAGE_WRITE_SETTINGS`. The Start button re-checks `Settings.System.canWrite()` and re-launches this rather than starting the service.
 3. Battery-optimization exemption (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) so Doze doesn't throttle the tick loop.
 

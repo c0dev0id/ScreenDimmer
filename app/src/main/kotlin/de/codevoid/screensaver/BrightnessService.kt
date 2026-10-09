@@ -107,14 +107,17 @@ class BrightnessService : Service(), SensorEventListener {
             started = true
             controller.ensureManualMode()
             detectAcState()
+            // No export flags: every action below is a protected system
+            // broadcast, which Android 14's "declare export behavior" rule
+            // exempts, and the flag constants would pin minSdk to 33.
             registerReceiver(acReceiver, IntentFilter().apply {
                 addAction(Intent.ACTION_POWER_CONNECTED)
                 addAction(Intent.ACTION_POWER_DISCONNECTED)
-            }, RECEIVER_EXPORTED)
+            })
             registerReceiver(screenReceiver, IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_SCREEN_ON)
-            }, RECEIVER_NOT_EXPORTED)
+            })
             lightSensor?.let {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             }

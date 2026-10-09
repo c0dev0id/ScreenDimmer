@@ -20,6 +20,8 @@ Brightness adapts to ambient light automatically using a sliding median filter o
 
 ## Setup
 
+Requires Android 8.0 (Oreo) or newer.
+
 1. Install the APK (download from Releases)
 2. Open the app and grant the three permissions it asks for:
    - **Notifications** — required to show the persistent service notification (Android 13+)
