@@ -13,7 +13,7 @@ Use case: tablets left in sunlight after the motorcycle is turned off drain the 
 
 ## Build Constraints
 
-**Do not build locally.** All builds run in CI/CD (GitHub Actions). The Gradle wrapper jar is intentionally not committed — it is generated during CI via `gradle wrapper --gradle-version=8.8`, so `./gradlew` does not exist in a fresh clone. There are no tests or linters configured; verification happens by pushing and watching CI.
+**Do not build locally.** All builds run in CI/CD (GitHub Actions). The Gradle wrapper jar is intentionally not committed — it is generated during CI via `gradle wrapper --gradle-version=8.8`, so `./gradlew` does not exist in a fresh clone. There are no unit or instrumentation tests, so verification happens by pushing and watching CI — but **Android Lint does run and can fail the build**: AGP wires `lintVitalAnalyzeRelease`/`lintVitalRelease` into `assembleRelease`, so any fatal-severity check (`NewApi` among them) breaks the release. Treat a lint error as a build error, not a warning.
 
 - **Gradle**: 8.8 · **AGP**: 8.5.2 · **Kotlin**: 1.9.25 (versions in `gradle/libs.versions.toml`)
 - **JDK**: 17 (Temurin)
