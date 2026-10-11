@@ -1,34 +1,26 @@
-# Screen Dimmer — Automatic Brightness for Motorcycle Tablets
+# Screen Dimmer
 
-Manages screen brightness and power on Android tablets used for motorcycle navigation. The screen runs at full brightness while riding (powered by the motorcycle), then automatically dims and optionally shuts off when the engine is switched off.
+Automatic screen brightness and power control for Android tablets used as motorcycle navigation displays. It runs the screen bright while the bike powers it, then dims and optionally shuts off on battery so the tablet doesn't drain itself in the sun.
 
-## The Problem
+## Features
 
-Motorcycle navigation tablets run outside in direct sunlight at full brightness. When the motorcycle is turned off, the tablet keeps running at full power — draining its own battery rapidly. The top end of the brightness range also has sharply diminishing returns: the last 20% of brightness consumes a disproportionate share of screen power for little visible gain in daylight.
-
-## What This App Does
-
-**While on AC power (motorcycle running):**
-- Lifts the brightness cap to 100%
-- Wakes the screen if it was off
-
-**While on battery (motorcycle off):**
-- Caps brightness at a configurable maximum (default 80%)
-- Optionally turns the screen off after a configurable idle period
-
-Brightness adapts to ambient light automatically using a sliding median filter over the light sensor — smooth, spike-resistant transitions without abrupt jumps.
+- **AC vs. battery modes** — full brightness while the bike is running, capped brightness once it's off.
+- **Ambient adaption** — brightness tracks the light sensor through a median filter, smooth and spike-resistant.
+- **Auto-off timer** — turns the screen off after a set idle period on battery.
+- **Runs unattended** — background service that restarts after reboot.
 
 ## Setup
 
-Requires Android 8.0 (Oreo) or newer.
+Requires Android 8.0 or newer.
 
-1. Install the APK (download from Releases)
-2. Open the app and grant the three permissions it asks for:
-   - **Notifications** — required to show the persistent service notification (Android 13+)
-   - **Modify system settings** — required to control screen brightness
-   - **Unrestricted battery usage** — required so Android doesn't throttle the brightness service while riding
-3. Tap **Start**
-4. The service runs in the background and starts automatically after reboot
+1. Install the APK from Releases.
+2. Open the app and grant the three permissions it requests:
+   - **Notifications** — shows the persistent service notification (Android 13+).
+   - **Modify system settings** — needed to control brightness.
+   - **Unrestricted battery usage** — stops Android from throttling the service.
+3. Tap **Start**.
+
+The live lux reading and service state (Running / Stopped) show at the top of the screen.
 
 ## Settings
 
@@ -36,8 +28,6 @@ Requires Android 8.0 (Oreo) or newer.
 |---|---|---|
 | Min brightness below | Lux level below which the screen stays at minimum brightness | 10 lx |
 | Max brightness above | Lux level above which the screen reaches maximum brightness | 50 000 lx |
-| Battery brightness cap | Maximum brightness allowed while on battery | 80% |
-| Smoothing | How quickly brightness tracks light changes (Fast = 5 s, Medium = 12 s, Slow = 25 s) | Medium |
-| Auto-off | Minutes after AC loss before the screen turns off (0 = disabled) | 5 min |
-
-The live lux reading at the top of the screen shows what the light sensor sees, alongside the service state (Running / Stopped).
+| Battery brightness cap | Maximum brightness allowed on battery | 80% |
+| Smoothing | How fast brightness tracks light changes (Fast / Medium / Slow) | Medium |
+| Auto-off | Minutes on battery before the screen turns off (0 = disabled) | 5 min |
