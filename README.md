@@ -41,7 +41,3 @@ Requires Android 8.0 (Oreo) or newer.
 | Auto-off | Minutes after AC loss before the screen turns off (0 = disabled) | 5 min |
 
 The live lux reading at the top of the screen shows what the light sensor sees, alongside the service state (Running / Stopped).
-
-## Build
-
-Releases are built automatically by GitHub Actions on every push to `main` and published as a pre-release tagged `nightly`. Grab the latest APK from the [Releases](../../releases/tag/nightly) page.
