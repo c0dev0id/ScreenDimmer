@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D1B6E"/>
+      <stop offset="100%" stop-color="#1A237E"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFA000"/>
+      <stop offset="100%" stop-color="#FFC107"/>
+    </linearGradient>
+    <linearGradient id="dimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFC107"/>
+      <stop offset="55%" stop-color="#FFA000"/>
+      <stop offset="100%" stop-color="#5C6BC0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="200" rx="16" fill="url(#bgGrad)"/>
+  <rect width="800" height="1" fill="#FFFFFF" opacity="0.08"/>
+
+  <!-- Brightness icon, same glyph as the app icon -->
+  <path transform="translate(56, 52) scale(4)" fill="url(#dimGrad)"
+        d="M20,8.69L20,4h-4.69L12,0.69L8.69,4H4v4.69L0.69,12L4,15.31V20h4.69L12,23.31L15.31,20H20v-4.69L23.31,12L20,8.69zM12,18c-3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6 6,2.69 6,6 -2.69,6 -6,6zM12,8c-2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4 -1.79,-4 -4,-4z"/>
+
+  <text x="190" y="115" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="56" fill="#FFFFFF" letter-spacing="1">Screen Dimmer</text>
+  <rect x="190" y="126" width="120" height="3" rx="1.5" fill="url(#accentGrad)" opacity="0.8"/>
+  <text x="192" y="158" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="400" font-size="20" fill="#C5CAE9">Auto-dimming for motorcycle navigation tablets</text>
+
+  <!-- Brightness level bars, fading from full to dimmed -->
+  <g transform="translate(690, 60)">
+    <rect x="0"  y="0"  width="14" height="80" rx="4" fill="#FFA000" opacity="0.9"/>
+    <rect x="22" y="16" width="14" height="64" rx="4" fill="#FFA000" opacity="0.6"/>
+    <rect x="44" y="32" width="14" height="48" rx="4" fill="#FFA000" opacity="0.35"/>
+    <rect x="66" y="48" width="14" height="32" rx="4" fill="#FFA000" opacity="0.15"/>
+  </g>
+</svg>

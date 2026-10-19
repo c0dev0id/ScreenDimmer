@@ -1,4 +1,6 @@
-# Screen Dimmer
+<p align="center">
+  <img src="docs/banner.svg" alt="Screen Dimmer" width="100%"/>
+</p>
 
 Automatic screen brightness and power control for Android tablets used as motorcycle navigation displays. It runs the screen bright while the bike powers it, then dims and optionally shuts off on battery so the tablet doesn't drain itself in the sun.
 
